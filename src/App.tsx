@@ -7,7 +7,7 @@ import SetUpScreen from './screen/SetUpScreen';
 export const setItem = async (key: string, value: string) => {
   try {
     await AsyncStorage.setItem(key, value);
-    
+
     // 저장값 확인을 위한 console.log
     console.log(`setItem... ${key} : ${value}`);
   } catch (e) {
@@ -27,13 +27,15 @@ export const getItem = async (key: string) => {
 const Stack = createNativeStackNavigator();
 
 function App(): React.JSX.Element {
-  const [isFirst, setIsFirst] = useState(true)
+  const [isFirst, setIsFirst] = useState(true);
 
-  getItem("first-login").then((value) => {
-    if (value != "") setIsFirst(false)
-  })
+  getItem('first-login').then(value => {
+    if (value !== '') {
+      setIsFirst(false);
+    }
+  });
 
-  const initialRouteName = isFirst ? "SetUp" : "Home"
+  const initialRouteName = isFirst ? 'SetUp' : 'Home';
 
   return (
     <NavigationContainer>
@@ -41,12 +43,12 @@ function App(): React.JSX.Element {
         <Stack.Screen
           name="Home"
           component={HomeScreen}
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="SetUp"
           component={SetUpScreen}
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>
@@ -54,11 +56,9 @@ function App(): React.JSX.Element {
 }
 
 function HomeScreen(): React.JSX.Element {
-  getItem("first-login")
+  getItem('first-login');
 
-  return (
-    <></>
-  );
+  return <></>;
 }
 
 export default App;
