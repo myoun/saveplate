@@ -103,7 +103,13 @@ function SetUpTwo(): React.JSX.Element {
       groupBy(req => `${req.type}-${req.origin}`),
       mergeMap(group$ => group$.pipe(debounceTime(400))),
     )
-    .subscribe(p => console.log(`suggestion for ${list.at(p.origin)?.key}`));
+    .subscribe(p => {
+      const j = fetch(`http://127.0.0.1:8000/autocompletion?type=${p.type}&data=${p.data}`, {
+        method: 'get'
+      })
+      .then((d) => d.json())
+      .catch(error => console.warn(error))
+    });
 
   return (
     <>
