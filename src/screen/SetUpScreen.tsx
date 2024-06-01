@@ -1,5 +1,9 @@
-import { useState } from 'react';
-import { TextField, TextFieldAppendButton } from '../components/TextField';
+import { useEffect, useState } from 'react';
+import {
+  TextField,
+  TextFieldAppendButton,
+  TextFieldProps,
+} from '../components/TextField';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
 import styles from '../styles';
@@ -8,7 +12,20 @@ import {
   NativeStackNavigationProp,
   createNativeStackNavigator,
 } from '@react-navigation/native-stack';
-import { debounce, debounceTime, groupBy, mergeMap, Subject } from 'rxjs';
+import {
+  debounceTime,
+  filter,
+  groupBy,
+  mergeMap,
+  Subject,
+  Subscription,
+} from 'rxjs';
+import Autocomplete from '../components/Autocomplete.tsx';
+import React from 'react';
+import {
+  AutocompleteHelper,
+  AutocompleteProps,
+} from '../components/autocomplete/types.ts';
 
 type SetUpStackParamList = {
   One: undefined;
@@ -68,48 +85,99 @@ type AutoCompletionRequest = {
   origin: any;
 };
 
+type AutoCompletionResponse = {
+  type: AutoCompletionType;
+  data: string[];
+  origin: any;
+};
+
 type AutoCompletionType = 'ingredient' | 'sauce';
 
-const AutoCompletionSubject$ = new Subject<AutoCompletionRequest>();
+const AutoCompletionRequestSubject$ = new Subject<AutoCompletionRequest>();
+const AutoCompletionResponseSubject$ = new Subject<AutoCompletionResponse>();
 const AutoCompletionService = {
-  onRequest: AutoCompletionSubject$.asObservable(),
+  onRequest: AutoCompletionRequestSubject$.asObservable(),
+  onResponse: AutoCompletionResponseSubject$.asObservable(),
   request(req: AutoCompletionRequest) {
-    AutoCompletionSubject$.next(req);
+    AutoCompletionRequestSubject$.next(req);
+  },
+  response(res: AutoCompletionResponse) {
+    AutoCompletionResponseSubject$.next(res);
   },
 };
 
 // 재료 작성
 function SetUpTwo(): React.JSX.Element {
-  const onChangeFactory = (key: number) => {
-    return (data: string) => {
-      const req: AutoCompletionRequest = {
-        type: 'ingredient',
-        data: data,
-        origin: key,
-      };
-      AutoCompletionService.request(req);
+  const generateTextFieldProps = (key: number): AutocompleteProps => {
+    let subs: Subscription | undefined;
+    return {
+      key: key,
+      completionKey: key,
+      onChangeText(data: string) {
+        console.log(data);
+        const req: AutoCompletionRequest = {
+          type: 'ingredient',
+          data: data,
+          origin: key,
+        };
+        AutoCompletionService.request(req);
+      },
+      onRender(helper: AutocompleteHelper) {
+        subs = AutoCompletionService.onResponse
+          .pipe(
+            filter(
+              res => res.type === 'ingredient' && res.origin === helper.key,
+            ),
+          )
+          .subscribe(res => {
+            helper.setList(res.data);
+          });
+      },
+      onCleanup() {
+        if (subs) {
+          subs.unsubscribe();
+        }
+      },
     };
   };
-
+  // @ts-ignore
   const [list, setList] = useState([
-    <TextField key={0} onChange={onChangeFactory(0)} />,
-    <TextField key={1} onChange={onChangeFactory(1)} />,
-    <TextField key={2} onChange={onChangeFactory(2)} />,
+    React.createElement(Autocomplete, generateTextFieldProps(0)),
+    // React.createElement(Autocomplete, generateTextFieldProps(1)),
+    // React.createElement(Autocomplete, generateTextFieldProps(2)),
     <TextFieldAppendButton key={-1} />,
   ]);
 
-  AutoCompletionService.onRequest
-    .pipe(
-      groupBy(req => `${req.type}-${req.origin}`),
-      mergeMap(group$ => group$.pipe(debounceTime(400))),
-    )
-    .subscribe(p => {
-      const j = fetch(`http://127.0.0.1:8000/autocompletion?type=${p.type}&data=${p.data}`, {
-        method: 'get'
-      })
-      .then((d) => d.json())
-      .catch(error => console.warn(error))
-    });
+  useEffect(() => {
+    AutoCompletionService.onRequest
+      .pipe(
+        groupBy(req => `${req.type}-${req.origin}`),
+        mergeMap(group$ => group$.pipe(debounceTime(400))),
+      )
+      .subscribe(async req => {
+        const acRequest = await fetch(
+          `http://10.0.2.2:8000/autocompletion?type=${req.type}&data=${req.data}`,
+          {
+            method: 'get',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+        if (acRequest.status !== 200) {
+          console.warn(acRequest.statusText);
+          return;
+        }
+
+        const result = await acRequest.json();
+        const response: AutoCompletionResponse = {
+          type: req.type,
+          data: result,
+          origin: req.origin,
+        };
+        AutoCompletionService.response(response);
+      });
+  }, []);
 
   return (
     <>
