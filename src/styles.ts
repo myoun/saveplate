@@ -14,6 +14,7 @@ export const styles = StyleSheet.create({
   commonTitle: {
     fontSize: 32,
     margin: 10,
+    color: 'black',
   },
   setUpButton: {
     backgroundColor: 'royalblue',
@@ -27,8 +28,6 @@ export const styles = StyleSheet.create({
   textField: {
     margin: 10,
     width: 300,
-    borderColor: 'black',
-    backgroundColor: 'lightgrey',
   },
 });
 

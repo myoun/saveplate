@@ -1,35 +1,20 @@
 import { useEffect, useState } from 'react';
-import {
-  TextField,
-  TextFieldAppendButton,
-  TextFieldProps,
-} from '../components/TextField';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { Image, TouchableOpacity, View } from 'react-native';
 import styles from '../styles';
 import { useNavigation } from '@react-navigation/native';
 import {
   NativeStackNavigationProp,
   createNativeStackNavigator,
 } from '@react-navigation/native-stack';
-import {
-  debounceTime,
-  filter,
-  groupBy,
-  mergeMap,
-  Subject,
-  Subscription,
-} from 'rxjs';
-import Autocomplete from '../components/Autocomplete.tsx';
+import { Subject } from 'rxjs';
 import React from 'react';
-import {
-  AutocompleteHelper,
-  AutocompleteProps,
-} from '../components/autocomplete/types.ts';
+import { IngredientAutoComplete } from '../components/IngredientAutoComplete.tsx';
+import { Autocomplete, Button, Text } from '@ui-kitten/components';
 
 type SetUpStackParamList = {
-  One: undefined;
-  Two: undefined;
+  welcome: undefined;
+  ingredient: undefined;
 };
 
 const SetUpStack = createNativeStackNavigator<SetUpStackParamList>();
@@ -39,13 +24,13 @@ export default function SetUpScreen(): React.JSX.Element {
     <>
       <SetUpStack.Navigator>
         <SetUpStack.Screen
-          name="One"
-          component={SetUpOne}
+          name="welcome"
+          component={Welcome}
           options={{ headerShown: false }}
         />
         <SetUpStack.Screen
-          name="Two"
-          component={SetUpTwo}
+          name="ingredient"
+          component={Ingredient}
           options={{ headerShown: false }}
         />
       </SetUpStack.Navigator>
@@ -53,12 +38,12 @@ export default function SetUpScreen(): React.JSX.Element {
   );
 }
 
-function SetUpOne(): React.JSX.Element {
+function Welcome(): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<SetUpStackParamList>>();
 
   const nextStep = () => {
-    navigation.navigate('Two');
+    navigation.navigate('ingredient');
   };
 
   return (
@@ -107,83 +92,28 @@ const AutoCompletionService = {
 };
 
 // 재료 작성
-function SetUpTwo(): React.JSX.Element {
-  const generateTextFieldProps = (key: number): AutocompleteProps => {
-    let subs: Subscription | undefined;
-    return {
-      key: key,
-      completionKey: key,
-      onChangeText(data: string) {
-        console.log(data);
-        const req: AutoCompletionRequest = {
-          type: 'ingredient',
-          data: data,
-          origin: key,
-        };
-        AutoCompletionService.request(req);
-      },
-      onRender(helper: AutocompleteHelper) {
-        subs = AutoCompletionService.onResponse
-          .pipe(
-            filter(
-              res => res.type === 'ingredient' && res.origin === helper.key,
-            ),
-          )
-          .subscribe(res => {
-            helper.setList(res.data);
-          });
-      },
-      onCleanup() {
-        if (subs) {
-          subs.unsubscribe();
-        }
-      },
-    };
-  };
+function Ingredient(): React.JSX.Element {
   // @ts-ignore
   const [list, setList] = useState([
-    React.createElement(Autocomplete, generateTextFieldProps(0)),
-    // React.createElement(Autocomplete, generateTextFieldProps(1)),
-    // React.createElement(Autocomplete, generateTextFieldProps(2)),
-    <TextFieldAppendButton key={-1} />,
+    <IngredientAutoComplete completionKey={0} key={0} />,
+    <IngredientAutoComplete completionKey={1} key={1} />,
+    <IngredientAutoComplete completionKey={2} key={2} />,
   ]);
 
-  useEffect(() => {
-    AutoCompletionService.onRequest
-      .pipe(
-        groupBy(req => `${req.type}-${req.origin}`),
-        mergeMap(group$ => group$.pipe(debounceTime(400))),
-      )
-      .subscribe(async req => {
-        const acRequest = await fetch(
-          `http://10.0.2.2:8000/autocompletion?type=${req.type}&data=${req.data}`,
-          {
-            method: 'get',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          },
-        );
-        if (acRequest.status !== 200) {
-          console.warn(acRequest.statusText);
-          return;
-        }
-
-        const result = await acRequest.json();
-        const response: AutoCompletionResponse = {
-          type: req.type,
-          data: result,
-          origin: req.origin,
-        };
-        AutoCompletionService.response(response);
-      });
-  }, []);
+  const addNewInput = () => {
+    setList([
+      ...list,
+      <IngredientAutoComplete completionKey={list.length} key={list.length} />,
+    ]);
+  };
 
   return (
     <>
       <SafeAreaView style={styles.commonView}>
         <Text style={styles.commonTitle}>재료를 입력해주세요</Text>
         {list}
+        <Button onPress={addNewInput}>ADD</Button>
+        <Button>SUBMIT</Button>
       </SafeAreaView>
     </>
   );

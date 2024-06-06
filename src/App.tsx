@@ -1,8 +1,16 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import SetUpScreen from './screen/SetUpScreen';
+import * as eva from '@eva-design/eva';
+import {
+  ApplicationProvider,
+  IconRegistry,
+  Layout,
+  Text,
+} from '@ui-kitten/components';
+import { default as theme } from './theme.json';
+import { AppNavigator } from './components/Navigator.tsx';
 
 export const setItem = async (key: string, value: string) => {
   try {
@@ -27,6 +35,16 @@ export const getItem = async (key: string) => {
 const Stack = createNativeStackNavigator();
 
 function App(): React.JSX.Element {
+  useEffect(() => {
+    const error = console.error;
+    console.error = (...args: any) => {
+      if (/defaultProps/.test(args[0])) {
+        return;
+      }
+      error(...args);
+    };
+  }, []);
+
   const [isFirst, setIsFirst] = useState(true);
 
   getItem('first-login').then(value => {
@@ -35,23 +53,14 @@ function App(): React.JSX.Element {
     }
   });
 
-  const initialRouteName = isFirst ? 'SetUp' : 'Home';
-
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName={initialRouteName}>
-        <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="SetUp"
-          component={SetUpScreen}
-          options={{ headerShown: false }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <>
+      <ApplicationProvider {...eva} theme={{ ...eva.dark, ...theme }}>
+        <NavigationContainer>
+          <AppNavigator isFirst={isFirst} />
+        </NavigationContainer>
+      </ApplicationProvider>
+    </>
   );
 }
 
