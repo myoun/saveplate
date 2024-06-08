@@ -1,3 +1,9 @@
+import { Text } from '@ui-kitten/components';
+
 export function HomeScreen() {
-  return <></>;
+  return (
+    <>
+      <Text style={{ color: 'red' }}>Hello</Text>
+    </>
+  );
 }

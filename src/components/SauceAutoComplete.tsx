@@ -2,16 +2,16 @@ import { Autocomplete, AutocompleteItem } from '@ui-kitten/components';
 import React, { useEffect, useRef } from 'react';
 import {
   getAutoCompletionManager,
-  IngredientAutoCompletion,
+  SauceAutoCompletion,
 } from './AutoCompletionManager.ts';
 import styles from '../styles.ts';
 
 export type AutoCompletionProps = {
   completionKey: number;
-  setIngredient: (key: number, data: string) => void;
+  setSauce: (key: number, data: string) => void;
 };
 
-export function IngredientAutoComplete(props: AutoCompletionProps) {
+export function SauceAutoComplete(props: AutoCompletionProps) {
   const [data, setData] = React.useState<string[]>(['']);
   const [value, setValue] = React.useState<string>('');
 
@@ -19,20 +19,20 @@ export function IngredientAutoComplete(props: AutoCompletionProps) {
 
   const onSelect = (index: number) => {
     setValue(data[index]);
-    props.setIngredient(props.completionKey, data[index]);
+    props.setSauce(props.completionKey, data[index]);
   };
 
   const onChangeText = (text: string) => {
-    const manager = getAutoCompletionManager<IngredientAutoCompletion>();
-    manager.request('ingredient', text, props.completionKey);
+    const manager = getAutoCompletionManager<SauceAutoCompletion>();
+    manager.request('sauce', text, props.completionKey);
     setValue(text);
-    props.setIngredient(props.completionKey, text);
+    props.setSauce(props.completionKey, text);
   };
 
   useEffect(() => {
-    const manager = getAutoCompletionManager<IngredientAutoCompletion>();
+    const manager = getAutoCompletionManager<SauceAutoCompletion>();
     const subscription = manager.subscribe(
-      'ingredient',
+      'sauce',
       origin => origin === props.completionKey,
       res => {
         const d = ['', ...res];

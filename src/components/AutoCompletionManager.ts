@@ -33,6 +33,11 @@ export interface IngredientAutoCompletion
   type: 'ingredient';
 }
 
+export interface SauceAutoCompletion
+  extends BaseAutoCompletion<IngredientResponse> {
+  type: 'sauce';
+}
+
 type AutoCompletionRequest<T extends AAC> = {
   type: T['type'];
   data: string;

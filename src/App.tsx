@@ -1,5 +1,4 @@
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as eva from '@eva-design/eva';
@@ -11,28 +10,7 @@ import {
 } from '@ui-kitten/components';
 import { default as theme } from './theme.json';
 import { AppNavigator } from './components/Navigator.tsx';
-
-export const setItem = async (key: string, value: string) => {
-  try {
-    await AsyncStorage.setItem(key, value);
-
-    // 저장값 확인을 위한 console.log
-    console.log(`setItem... ${key} : ${value}`);
-  } catch (e) {
-    throw e;
-  }
-};
-
-export const getItem = async (key: string) => {
-  try {
-    const res = await AsyncStorage.getItem(key);
-    return res || '';
-  } catch (e) {
-    throw e;
-  }
-};
-
-const Stack = createNativeStackNavigator();
+import { StorageManager } from './storage.ts';
 
 function App(): React.JSX.Element {
   useEffect(() => {
@@ -47,8 +25,9 @@ function App(): React.JSX.Element {
 
   const [isFirst, setIsFirst] = useState(true);
 
-  getItem('first-login').then(value => {
-    if (value !== '') {
+  StorageManager.getItem('first-login').then(value => {
+    console.log(value);
+    if (value !== null) {
       setIsFirst(false);
     }
   });
@@ -62,12 +41,6 @@ function App(): React.JSX.Element {
       </ApplicationProvider>
     </>
   );
-}
-
-function HomeScreen(): React.JSX.Element {
-  getItem('first-login');
-
-  return <></>;
 }
 
 export default App;
